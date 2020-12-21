@@ -2,11 +2,12 @@
 from netCDF4 import Dataset, num2date
 from xlsxwriter import Workbook
 import numpy as np
+from sys import exit
 # Custom functions
 from src.countries import CountryChecker, Point
 from src.progressbar import printProgressBar
 from src.spreadsheets import add_measurement, set_headers
-from src.array_search import find, findIndex, findMany
+from src.array_search import find, findLast, findIndex, findLastIndex, findMany
 
 
 def get_stats(collection):
@@ -17,24 +18,31 @@ def get_stats(collection):
     return {"mean": m, "min": mi, "max": ma}
 
 
-def mrro_stats_year(ws: Workbook.worksheet_class, measurements):
+def mrro_stats_year(ws: Workbook.worksheet_class, measurements, year_values):
     current = 0
-    total = len(measurements) * 5
+    total = len(measurements) * len(year_values)
     for measure in measurements:
-        for year in measure["mrro"].keys():
-            values = list(map(lambda m: m["value"], measure["mrro"][year]))
+        for yi, year in enumerate(measure["mrro"]):
+            # Remove all 0 values
+            values = np.array(year)
+            mask = values != 0
+            values = values[mask]
+
+            # Get statistics
             stats = get_stats(values)
             add_measurement(
                 ws,
                 {
                     "country": measure["country"],
-                    "year": year,
+                    "year": year_values[yi],
                     "mean": stats["mean"],
                     "max": stats["max"],
                     "min": stats["min"]
                 },
                 current
             )
+
+            # Progress control
             current += 1
             printProgressBar(current, total, "Analyzing data:",
                              "Complete", 2, 25)
@@ -43,22 +51,30 @@ def mrro_stats_year(ws: Workbook.worksheet_class, measurements):
 def main():
     # Setup the datasets
     ds_mrro = Dataset("./datasets/IEA_CMCC_Runoffanomalyallmonths.nc")
-
-    # Open excel file
-    wb = Workbook('./out/data.xlsx')
-    ws = wb.add_worksheet("statistics")
-    set_headers(ws, ["Country", "Year", "Mean", "Max", "Min"])
-
-    times = ds_mrro.variables["time"]
-    mrros = ds_mrro.variables["ro"][192:]
-
     # Setup world dataset and country checker
     cc = CountryChecker(
         "./datasets/world_borders_old/TM_WORLD_BORDERS-0.3.shp")
 
+    # Open excel file
+    wb = Workbook('./out/data.xlsx')
+
+    # Setup data variables
+    times = ds_mrro.variables["time"]
+    dates = num2date(times[192:], times.units, times.calendar)
+    mrros = ds_mrro.variables["ro"][192:]
+
+    desired_years = [2016, 2017, 2018, 2019, 2020]
+    year_ranges = []
+
+    for year in desired_years:
+        start = findIndex(dates, lambda d: d.year == year)
+        end = findLastIndex(dates, lambda d: d.year == year)
+
+        year_ranges.append((start, end))
+
     measurements = []
 
-    total = len(mrros) * len(mrros[0]) * len(mrros[0][0])
+    total = len(mrros[0]) * len(mrros[0][0])
     current = 0
     # Iterate mrro dataset
     for lti, lat in enumerate(ds_mrro.variables["latitude"]):
@@ -70,45 +86,27 @@ def main():
             country = str(c)
 
             # Find existing country or create new one
-            measure = {}
-            mi = findIndex(measurements, lambda m: m["country"] == country)
-            if mi != -1:
-                measure = measurements[mi]
-            else:
-                # Save values in memory
-                measure["country"] = country
-                measure["mrro"] = {}
+            measure = find(measurements, lambda m: m["country"] == country)
+            if measure == None:
+                measure = {
+                    "country": country,
+                    "mrro": [[]] * len(year_ranges)
+                }
                 measurements.append(measure)
 
-            for ti, time in enumerate(num2date(times[192:], times.units, times.calendar)):
-                current += 1
+            for idx, bnds in enumerate(year_ranges):
+                start, end = bnds
+                measure["mrro"][idx].append(mrros[start:end, lti, lni])
 
-                # Total Runoff
-                mrro = mrros[ti][lti][lni]
-
-                if mrro > 0:
-                    row = {
-                        "time": str(time),
-                        "lat": float(lat),
-                        "lon": float(fLon),
-                        "value": mrro
-                    }
-
-                    if not str(time.year) in measure["mrro"]:
-                        measure["mrro"][str(time.year)] = []
-
-                    # Save in memory
-                    measure["mrro"][str(time.year)].append(row)
-
-                    # print(
-                    #     f"{time} Country: {country} lat: {lat}, lon: {fLon} {mrros.long_name}: {mrro}{mrros.original_units}")
-
-                printProgressBar(current, total, "Collecting data:",
-                                 "Complete", 2, 25)
+            # Progress control
+            current += 1
+            printProgressBar(current, total, "Collecting data:",
+                             "Complete", 2, 25)
 
     # Compute statistics
-    ws = wb.get_worksheet_by_name("statistics")
-    mrro_stats_year(ws, measurements)
+    ws = wb.add_worksheet("statistics")
+    set_headers(ws, ["Country", "Year", "Mean", "Max", "Min"])
+    mrro_stats_year(ws, measurements, desired_years)
 
     ds_mrro.close()
     wb.close()
