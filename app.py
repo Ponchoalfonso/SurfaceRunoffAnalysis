@@ -3,6 +3,7 @@ from netCDF4 import Dataset, num2date
 from xlsxwriter import Workbook
 import numpy as np
 from sys import exit
+from time import time
 # Custom functions
 from src.countries import CountryChecker, Point
 from src.progressbar import printProgressBar
@@ -96,7 +97,7 @@ def main():
 
             for idx, bnds in enumerate(year_ranges):
                 start, end = bnds
-                measure["mrro"][idx].append(mrros[start:end, lti, lni])
+                measure["mrro"][idx] += mrros[start:end, lti, lni].tolist()
 
             # Progress control
             current += 1
@@ -113,4 +114,7 @@ def main():
 
 
 if __name__ == '__main__':
+    start_time = time()
     main()
+    execution_time = (time - start_time) / 60 / 60
+    print(f"{execution_time}hrs")
