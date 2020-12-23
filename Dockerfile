@@ -12,6 +12,6 @@ RUN pip install pipenv
 RUN pipenv --python $(which python)
 # Install python packages
 RUN pipenv install
-RUN pip install GDAL==$(gdal-config --version)
+RUN pipenv install GDAL==$(gdal-config --version)
 
-CMD python app.py
+CMD pipenv run python3 app.py

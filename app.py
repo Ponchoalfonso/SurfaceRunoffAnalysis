@@ -45,8 +45,9 @@ def mrro_stats_year(ws: Workbook.worksheet_class, measurements, year_values):
 
             # Progress control
             current += 1
-            printProgressBar(current, total, "Analyzing data:",
-                             "Complete", 2, 25)
+
+        printProgressBar(current, total, "Analyzing data:",
+                         "Complete", 2, 25)
 
 
 def main():
@@ -101,8 +102,9 @@ def main():
 
             # Progress control
             current += 1
-            printProgressBar(current, total, "Collecting data:",
-                             "Complete", 2, 25)
+
+        printProgressBar(current, total, "Collecting data:",
+                         "Complete", 2, 25)
 
     # Compute statistics
     ws = wb.add_worksheet("statistics")
@@ -114,7 +116,8 @@ def main():
 
 
 if __name__ == '__main__':
+    print("Analysis started")
     start_time = time()
     main()
     execution_time = (time - start_time) / 60 / 60
-    print(f"{execution_time}hrs")
+    print(f"Done in {execution_time}hrs")

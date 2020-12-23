@@ -9,5 +9,3 @@ services:
       - ./datasets/.:/usr/src/app/datasets
 
     container_name: runoffanalysis
-
-    command: tail -f /dev/null
