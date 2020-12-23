@@ -47,7 +47,7 @@ def mrro_stats_year(ws: Workbook.worksheet_class, measurements, year_values):
             current += 1
 
         printProgressBar(current, total, "Analyzing data:",
-                         "Complete", 2, 25)
+                         "Complete", 2, 25, "█", "\n")
 
 
 def main():
@@ -104,7 +104,7 @@ def main():
             current += 1
 
         printProgressBar(current, total, "Collecting data:",
-                         "Complete", 2, 25)
+                         "Complete", 2, 25, "█", "\n")
 
     # Compute statistics
     ws = wb.add_worksheet("statistics")
