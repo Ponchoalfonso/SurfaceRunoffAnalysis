@@ -1,4 +1,5 @@
 from netCDF4 import Dataset, num2date
+import numpy as np
 
 
 def main():
@@ -16,5 +17,10 @@ def main():
     #     print(lon)
 
 
+def other():
+    x = np.empty((10, 10))
+    print(x[:, 0:4])
+
+
 if __name__ == '__main__':
-    main()
+    other()

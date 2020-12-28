@@ -1,17 +1,18 @@
 FROM python:3
 
 WORKDIR /usr/src/app
+RUN mkdir "out"
 
-RUN git clone https://github.com/Ponchoalfonso/SurfaceRunoffAnalysis.git .
+# Copy application and requirements
+COPY requirements.txt ./
+COPY app.py ./
+COPY src ./src
 
 # Install GDAL
 RUN apt update
 RUN apt -y install gdal-bin libgdal-dev
-# Install pipenv
-RUN pip install pipenv
-RUN pipenv --python $(which python)
 # Install python packages
-RUN pipenv install
-RUN pipenv install GDAL==$(gdal-config --version)
+RUN pip install -r requirements.txt
+RUN pip install GDAL==$(gdal-config --version)
 
-CMD pipenv run python3 app.py
+CMD python app.py
