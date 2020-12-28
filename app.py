@@ -16,7 +16,7 @@ def stats_per_country(bounds, year_ranges):
     lower, upper = bounds
 
     # Setup the datasets
-    ds_mrro = Dataset("./datasets/IEA_CMCC_Runoffanomalyallmonths.nc")
+    ds_mrro = Dataset("./datasets/IEA_CMCC_Runoffmonthlyallmonths.nc")
     # Setup world dataset and country checker
     cc = CountryChecker(
         "./datasets/world_borders_old/TM_WORLD_BORDERS-0.3.shp")
@@ -48,6 +48,11 @@ def stats_per_country(bounds, year_ranges):
             for idx, bnds in enumerate(year_ranges):
                 start, end = bnds
                 ros = mrros[start:end, lti, lni]
+                mask = ros != 0
+                ros = ros[mask]
+
+                if (len(ros) == 0):
+                    continue
 
                 measure["mrro"][idx]["sum"] += np.sum(ros)
                 measure["mrro"][idx]["count"] += len(ros)
